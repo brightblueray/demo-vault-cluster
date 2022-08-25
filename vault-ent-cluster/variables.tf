@@ -15,3 +15,7 @@ variable "hadr-vault-region" {
   description = "Region for the hadr VPC"
   default     = "us-east-1"
 }
+
+variable "vault-license" {
+  type = string
+}

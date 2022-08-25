@@ -6,25 +6,22 @@ terraform {
     hcp = {
       source = "hashicorp/hcp"
     }
-    # local = {
-    #   source = "hashicorp/local"
-    # }
+    local = {
+      source = "hashicorp/local"
+    }
   }
   cloud {
     organization = "brightblueray"
     workspaces {
-      name = "demo-vault-cluster"
+      name = "vault-ent-cluster"
     }
   }
 }
 
-provider "local" {
-  # Configuration options
-}
 
 // Providers
 provider "hcp" {}
-
+provider "local" {}
 provider "aws" {
   alias  = "primary"
   region = var.primary-vault-region
@@ -45,10 +42,10 @@ data "hcp_packer_image" "ubuntu-vault-img" {
   region         = "us-east-2"
 }
 
-# resource "local_sensitive_file" "vault-lic" {
-#     content  = "foo!"
-#     filename = "vault.hclic"
-# }
+resource "local_sensitive_file" "vault-lic" {
+    content  = var.vault-license
+    filename = "${path.module}/vault.hclic"
+}
 
 // Vault Pre-reqs
 module "vault-ent-starter_example_prereqs_quickstart" {
@@ -67,6 +64,9 @@ module "vault-ent-starter" {
   providers = {
     aws = aws.primary
   }
+  depends_on = [
+    local_sensitive_file.vault-lic
+  ]
 
   # prefix for tagging/naming AWS resources
   resource_name_prefix = "test"
