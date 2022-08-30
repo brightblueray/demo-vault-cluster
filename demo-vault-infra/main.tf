@@ -1,8 +1,8 @@
 terraform {
   required_providers {
     aws = {
-      source = "hashicorp/aws"
-      version = "4.24.0"
+      source  = "hashicorp/aws"
+      version = "4.28.0"
     }
   }
 
@@ -15,13 +15,30 @@ terraform {
 }
 
 provider "aws" {
-  alias = "primary-region"
-  region = var.primary-vpc-region
+  alias  = "primary-region"
+  region = var.vpc-primary-region
+  default_tags {
+    tags = {
+      Terraform   = "true"
+      Environment = "dev"
+      Workspace   = "AWS VPC"
+      Purpose     = "Vault_Enterprise_Demo"
+      Owner       = "rryjewski"
+    }
+  }
 }
 
-provider "aws" {
-  alias = "hadr-region"
-  region = var.hadr-vpc-region
+# provider "aws" {
+#   alias  = "hadr-region"
+#   region = var.hadr-vpc-region
+# }
+
+module "secrets" {
+  source = "./secrets/"
+  providers = {
+    aws = aws.primary-region
+  }
+  resource_name_prefix = var.prefix
 }
 
 # resource "aws_kms_key" "rryjewski-vault-unseal" {
@@ -30,29 +47,29 @@ provider "aws" {
 #   multi_region = true
 # }
 
-module "primary-vpc" {
+module "vpc-primary" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "3.14.2"
-  # providers = {
-  #   aws = aws.primary-region
-  # }
-  
-  # insert the 23 required variables here
+  providers = {
+    aws = aws.primary-region
+  }
+
   name = "${var.prefix}-primaryClusterVpc"
   cidr = "10.0.0.0/16"
 
-  azs = ["us-east-2a", "us-east-2b", "us-east-2c"]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  azs             = var.vpc-primary-azs
+  private_subnets = var.vpc-primary-priv-subnets
+  public_subnets  = var.vpc-primary-pub-subnets
 
-  enable_nat_gateway = true
+  enable_nat_gateway     = true
   one_nat_gateway_per_az = true
-  enable_vpn_gateway = true
+  enable_vpn_gateway     = true
+  create_igw             = true
 
   tags = {
-    Terraform = "true"
+    Terraform   = "true"
     Environment = "dev"
-    Owner = "rryjewski"
+    Owner       = "rryjewski"
   }
 }
 
@@ -62,7 +79,7 @@ module "primary-vpc" {
 #   providers = {
 #     aws = aws.hadr-region
 #   }
-  
+
 #   # insert the 23 required variables here
 #   name = "${var.prefix}-hadrClusterVpc"
 #   cidr = "20.0.0.0/16"
@@ -120,21 +137,4 @@ module "primary-vpc" {
 #   accepter {
 #     allow_remote_vpc_dns_resolution = false
 #   } 
-# }
-
-# module "accelerator_aws_vault" {
-#   # source  = "app.terraform.io/brightblueray/vault-cluster/aws"
-#   # version = "0.1.0"
-#   source = "./accelerator-aws-vault/"
-#   # insert required variables here
-#   # network = data.terraform_remote_state.vault-infra.outputs.primary-vpc-id
-#   # region = data.terraform_remote_state.vault-infra.outputs.primary-vpc-region
-#   # subnetworks = data.terraform_remote_state.vault-infra.outputs.primary-vpc-subnetworks
-#   network = module.primary-vpc.vpc_id
-#   region = var.primary-vpc-region
-#   subnetworks = module.primary-vpc.public_subnets
-#   vault_private_key_secret = "arn:aws:secretsmanager:us-east-2:711129375688:secret:certificate_private_key-1MnUsq"
-#   vault_signed_cert_secret = "arn:aws:secretsmanager:us-east-2:711129375688:secret:signed_certificate-3DirYq"
-#   vault_ca_bundle_secret = "arn:aws:secretsmanager:us-east-2:711129375688:secret:ca_bundle-Wa3zkc"
-#   aws_kms_key_id = aws_kms_key.rryjewski-vault-unseal.key_id
 # }

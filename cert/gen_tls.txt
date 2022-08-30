@@ -1,0 +1,85 @@
+# Generate the CA private key
+$ openssl genrsa -out ca-key.pem 4096
+
+# Create a configuration file for the CA certificate
+cat <<EOF > ca_cert_config.txt
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_ca
+prompt             = no
+
+[req_distinguished_name]
+countryName             = US
+stateOrProvinceName     = Ohio
+localityName            = Westerville
+organizationName        = HashiCorp
+commonName              = HashiCorp
+
+[v3_ca]
+basicConstraints        = critical,CA:TRUE
+subjectKeyIdentifier    = hash
+authorityKeyIdentifier  = keyid:always,issuer
+EOF
+
+# Generate a CA valid for 10 years
+$ openssl req -new -x509 -days 3650 \
+-config ca_cert_config.txt \
+-key ca-key.pem \
+-out ca.pem
+
+# Generate a private key for the client certificate
+$ openssl genrsa -out cert-key.pem 4096
+
+# Create a configuration file for the client certificate
+$ cat <<EOF > server_cert_config.txt
+default_bit        = 4096
+distinguished_name = req_distinguished_name
+prompt             = no
+
+[req_distinguished_name]
+countryName             = US
+stateOrProvinceName     = Ohio
+localityName            = Westerville
+organizationName        = HashiCorp
+commonName              = vault.hashicorp.com
+EOF
+
+# Create an extension and SAN file for the client certificate
+# Add any additional SANs necessary for the Vault nodes
+$ cat <<EOF > server_ext_config.txt
+authorityKeyIdentifier = keyid,issuer
+basicConstraints       = CA:FALSE
+keyUsage               = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage       = serverAuth, clientAuth
+subjectAltName         = @alt_names
+
+[alt_names]
+DNS.1 = vault.hashicorp.com
+EOF
+
+# Generate the Certificate Signing Request
+$ openssl req -new -key cert-key.pem -out cert-csr.pem -config server_cert_config.txt
+
+# Generate the signed certificate valid for 1 year
+$ openssl x509 -req -in cert-csr.pem -out cert.pem \
+-CA ca.pem -CAkey ca-key.pem -CAcreateserial \
+-days 365 -sha512 -extfile server_ext_config.txt
+
+
+rryjewski@RKR-MBP14 cert % aws secretsmanager create-secret --name ca_bundle --secret-string file://ca.pem
+{
+    "ARN": "arn:aws:secretsmanager:us-east-2:711129375688:secret:ca_bundle-Wa3zkc",
+    "Name": "ca_bundle",
+    "VersionId": "de52773b-0426-4bc3-b282-11296b88aee1"
+}
+rryjewski@RKR-MBP14 cert % aws secretsmanager create-secret --name signed_certificate --secret-string file://cert.pem
+{
+    "ARN": "arn:aws:secretsmanager:us-east-2:711129375688:secret:signed_certificate-3DirYq",
+    "Name": "signed_certificate",
+    "VersionId": "6b36bc67-010e-43c0-9415-c11708c699ea"
+}
+rryjewski@RKR-MBP14 cert % aws secretsmanager create-secret --name certificate_private_key --secret-string file://cert-key.pem
+{
+    "ARN": "arn:aws:secretsmanager:us-east-2:711129375688:secret:certificate_private_key-1MnUsq",
+    "Name": "certificate_private_key",
+    "VersionId": "fd6e03e1-6495-4258-a5b5-5c5f9b80022c"

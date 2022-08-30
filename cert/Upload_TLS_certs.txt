@@ -1,0 +1,8 @@
+# Upload the CA certificate
+$ aws secretsmanager create-secret --name ca_bundle --secret-string file://ca.pem
+
+# Upload the signed certificate
+$ aws secretsmanager create-secret --name signed_certificate --secret-string file://cert.pem
+
+# Upload the certificate's private key
+$ aws secretsmanager create-secret --name certificate_private_key --secret-string file://cert-key.pem

@@ -29,7 +29,7 @@ provider "aws" {
     tags = {
       Terraform   = "true"
       Environment = "dev"
-      Purpose     = "demo"
+      Purpose     = "Vault_Enterprise_Demo"
       Owner       = "rryjewski"
     }
   }
@@ -42,19 +42,20 @@ data "hcp_packer_image" "ubuntu-vault-img" {
   region         = "us-east-2"
 }
 
-resource "local_sensitive_file" "vault-lic" {
-    content  = var.vault-license
-    filename = "${path.module}/vault.hclic"
+data "terraform_remote_state" "demo-vault-infra" {
+  backend = "remote"
+
+  config = {
+    organization = "brightblueray"
+    workspaces = {
+      name = "demo-vault-infra"
+    }
+  }
 }
 
-// Vault Pre-reqs
-module "vault-ent-starter_example_prereqs_quickstart" {
-  source  = "hashicorp/vault-ent-starter/aws//examples/prereqs_quickstart"
-  version = "0.2.1"
-  # insert the 1 required variable here
-  resource_name_prefix = "rryjewski"
-  aws_region = "us-east-2"
-  azs = [ "us-east-2a", "us-east-2b", "us-east-2c" ]
+resource "local_sensitive_file" "vault-lic" {
+  content  = var.vault-license
+  filename = "${path.module}/vault.hclic"
 }
 
 // Build Vault Cluster
@@ -69,13 +70,19 @@ module "vault-ent-starter" {
   ]
 
   # prefix for tagging/naming AWS resources
-  resource_name_prefix = "test"
+  resource_name_prefix = var.prefix
 
-  vpc_id                = module.vault-ent-starter_example_prereqs_quickstart.vpc_id
-  private_subnet_ids    = module.vault-ent-starter_example_prereqs_quickstart.private_subnet_ids
-  secrets_manager_arn   = module.vault-ent-starter_example_prereqs_quickstart.secrets_manager_arn
-  leader_tls_servername = module.vault-ent-starter_example_prereqs_quickstart.leader_tls_servername
-  lb_certificate_arn    = module.vault-ent-starter_example_prereqs_quickstart.lb_certificate_arn
+  vpc_id                = data.terraform_remote_state.demo-vault-infra.outputs.vpc-primary-id
+  private_subnet_ids    = data.terraform_remote_state.demo-vault-infra.outputs.vpc-primary-subnets-priv
+  secrets_manager_arn   = data.terraform_remote_state.demo-vault-infra.outputs.secrets_manager_arn
+  leader_tls_servername = data.terraform_remote_state.demo-vault-infra.outputs.leader_tls_servername
+  lb_certificate_arn    = data.terraform_remote_state.demo-vault-infra.outputs.lb_certificate_arn
+
+  allowed_inbound_cidrs_lb  = ["0.0.0.0/0"]
+  allowed_inbound_cidrs_ssh = ["0.0.0.0/0"]
+  key_name                  = "rryjewski"
+  instance_type             = "m5.large"
+  vault_version             = "1.11.2"
 
   vault_license_filepath = "${path.module}/vault.hclic"
 }

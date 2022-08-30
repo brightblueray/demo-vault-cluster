@@ -33,3 +33,7 @@ override.tf.json
 
 # Vault License File
 **/vault.hclic
+
+# Any Certificate
+**/*.pem
+vault-ent-cluster/tmp.txt
