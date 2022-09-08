@@ -37,3 +37,4 @@ override.tf.json
 # Any Certificate
 **/*.pem
 vault-ent-cluster/tmp.txt
+vault-secrets.txt

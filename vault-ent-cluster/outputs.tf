@@ -15,5 +15,13 @@
 # }
 
 # output "lb_certificate_arn" {
-#   value = module.vault-ent-starter_example_prereqs_quickstart.lb_certificate_arn
+#   value = module.vault-ent-starter.lb_certificate_arn
 # }
+
+output "ingress_nlb_name" {
+  value = aws_lb.ingress_nlb.dns_name
+}
+
+output "vault_lb_dns_name" {
+  value = module.vault-ent-starter.vault_lb_dns_name
+}

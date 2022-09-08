@@ -86,3 +86,40 @@ module "vault-ent-starter" {
 
   vault_license_filepath = "${path.module}/vault.hclic"
 }
+
+// Create Ingress NLB
+resource "aws_lb" "ingress_nlb" {
+  provider = aws.primary
+  name = "${var.prefix}-tf-nlb-ingress"
+  internal = false
+  load_balancer_type = "network"
+  subnets = data.terraform_remote_state.demo-vault-infra.outputs.vpc-primary-subnets-pub
+}
+
+resource "aws_lb_target_group" "alb-vault-tg" {
+  provider = aws.primary
+  name = "${var.prefix}-alb-vault-tg"
+  target_type = "alb"
+  port = 8200
+  protocol = "TCP"
+  vpc_id = data.terraform_remote_state.demo-vault-infra.outputs.vpc-primary-id
+}
+
+resource "aws_lb_listener" "vault_listener" {
+  provider = aws.primary
+  load_balancer_arn = aws_lb.ingress_nlb.arn
+  port = 8200
+  protocol = "TCP"
+  # certificate_arn = data.terraform_remote_state.demo-vault-infra.outputs.lb_certificate_arn
+
+  default_action {
+    target_group_arn = aws_lb_target_group.alb-vault-tg.arn
+    type = "forward"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "target" {
+  provider = aws.primary
+  target_group_arn = aws_lb_target_group.alb-vault-tg.arn
+  target_id = module.vault-ent-starter.vault_lb_arn
+}
