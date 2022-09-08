@@ -1,37 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "4.28.0"
-    }
-  }
-
-  cloud {
-    organization = "brightblueray"
-    workspaces {
-      name = "demo-vault-infra"
-    }
-  }
-}
-
-provider "aws" {
-  alias  = "primary-region"
-  region = var.vpc-primary-region
-  default_tags {
-    tags = {
-      Terraform   = "true"
-      Environment = "dev"
-      Workspace   = "AWS VPC"
-      Purpose     = "Vault_Enterprise_Demo"
-      Owner       = "rryjewski"
-    }
-  }
-}
-
-# provider "aws" {
-#   alias  = "hadr-region"
-#   region = var.hadr-vpc-region
-# }
 
 module "secrets" {
   source = "./secrets/"
@@ -61,6 +27,8 @@ module "vpc-primary" {
   private_subnets = var.vpc-primary-priv-subnets
   public_subnets  = var.vpc-primary-pub-subnets
 
+  enable_dns_hostnames = true
+  enable_dns_support = true 
   enable_nat_gateway     = true
   one_nat_gateway_per_az = true
   enable_vpn_gateway     = true
