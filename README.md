@@ -1,21 +1,8 @@
 # demo-vault-ent-cluster
 
+Once cluster is deployed, ssh to one of the nodes and init (vault operator init), this will unseal vault.  Next, login to the remaining nodes and restart vault.  This will get the rest of the nodes to auto-join the cluster.  This is necessary since the default settings do not automatically retry to join the cluster.   
+
+
 # Doc Links
 Route Tables - https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html
 
-
-# Infrastructure
-## VPC
-rryjewski-primaryClusterVpc
-10.0.0.0/16 
-
-## Subnets
-Public
-10.0.101.0/24
-10.0.102.0/24
-10.0.103.0/24
-
-Private
-10.0.1.0/24
-10.0.2.0/24
-10.0.3.0/24

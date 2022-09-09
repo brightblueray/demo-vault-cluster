@@ -81,7 +81,8 @@ module "vault-ent-starter" {
   allowed_inbound_cidrs_lb  = ["0.0.0.0/0"]
   allowed_inbound_cidrs_ssh = ["0.0.0.0/0"]
   key_name                  = "rryjewski"
-  instance_type             = "m5.large"
+  # instance_type             = "m5.large"
+  instance_type             = "t2.micro"
   vault_version             = "1.11.2"
 
   vault_license_filepath = "${path.module}/vault.hclic"
@@ -120,6 +121,9 @@ resource "aws_lb_listener" "vault_listener" {
 
 resource "aws_lb_target_group_attachment" "target" {
   provider = aws.primary
+  depends_on = [
+    module.vault-ent-starter
+  ]
   target_group_arn = aws_lb_target_group.alb-vault-tg.arn
   target_id = module.vault-ent-starter.vault_lb_arn
 }

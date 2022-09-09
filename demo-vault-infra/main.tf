@@ -7,11 +7,12 @@ module "secrets" {
   resource_name_prefix = var.prefix
 }
 
-# resource "aws_kms_key" "rryjewski-vault-unseal" {
-#   description             = "KMS Vault Unseal Key"
-#   deletion_window_in_days = 10
-#   multi_region = true
-# }
+resource "aws_kms_key" "rryjewski-vault-unseal" {
+  provider = aws.primary-region
+  description             = "KMS Vault Unseal Key"
+  deletion_window_in_days = 10
+  multi_region = true
+}
 
 module "vpc-primary" {
   source  = "terraform-aws-modules/vpc/aws"
